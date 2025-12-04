@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button'
 import { PlayerCard } from '@/components/game/PlayerCard'
 import { useGame } from '@/hooks/useGame'
 import { useSocket } from '@/hooks/useSocket'
+import { useGameStore } from '@/store/gameStore'
+import { useAuth } from '@/contexts/AuthContext'
 
 const Voting = () => {
   const navigate = useNavigate()
@@ -23,7 +25,13 @@ const Voting = () => {
     phase,
   } = useGame()
 
-  const { emitVote } = useSocket(roomId)
+  const getPlayerById = useGameStore((state) => state.getPlayerById)
+  const { isAuthenticated } = useAuth()
+
+  const currentPlayer = getPlayerById(currentPlayerId)
+  const username = !isAuthenticated ? currentPlayer?.name : undefined
+
+  const { emitVote } = useSocket(roomId, username)
   const activePlayers = getActivePlayers()
   const myVote = votes[currentPlayerId]
   const isLocalMode = roomId === 'OFFLINE'

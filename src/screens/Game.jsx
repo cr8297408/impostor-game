@@ -12,6 +12,7 @@ import { GameTimer } from '@/components/game/GameTimer'
 import { useGame } from '@/hooks/useGame'
 import { useSocket } from '@/hooks/useSocket'
 import { useGameStore } from '@/store/gameStore'
+import { useAuth } from '@/contexts/AuthContext'
 
 const Game = () => {
   const navigate = useNavigate()
@@ -31,7 +32,14 @@ const Game = () => {
   } = useGame()
 
   const endRoundEarly = useGameStore((state) => state.endRoundEarly)
-  const { emitClue } = useSocket(roomId)
+  const currentPlayerId = useGameStore((state) => state.currentPlayerId)
+  const getPlayerById = useGameStore((state) => state.getPlayerById)
+  const { isAuthenticated } = useAuth()
+
+  const myPlayer = getPlayerById(currentPlayerId)
+  const username = !isAuthenticated ? myPlayer?.name : undefined
+
+  const { emitClue } = useSocket(roomId, username)
   const [clueText, setClueText] = useState('')
   const [showWord, setShowWord] = useState(false)
 

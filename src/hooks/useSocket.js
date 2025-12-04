@@ -1,19 +1,35 @@
 import { useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 import { useGameStore } from '@/store/gameStore'
+import { useAuth } from '@/contexts/AuthContext'
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001'
 
-export const useSocket = (roomId) => {
+export const useSocket = (roomId, username) => {
   const socketRef = useRef(null)
   const store = useGameStore()
+  const { session, user } = useAuth()
 
   useEffect(() => {
     if (!roomId || roomId === 'OFFLINE') return
 
+    // Preparar autenticación
+    const auth = {}
+    if (session?.access_token) {
+      // Usuario autenticado
+      auth.token = session.access_token
+    } else if (username) {
+      // Usuario anónimo
+      auth.username = username
+    } else {
+      console.error('No se proporcionó token ni username para la conexión')
+      return
+    }
+
     // Conectar al servidor
     socketRef.current = io(SOCKET_URL, {
       transports: ['websocket'],
+      auth
     })
 
     const socket = socketRef.current
@@ -61,7 +77,7 @@ export const useSocket = (roomId) => {
     return () => {
       socket.disconnect()
     }
-  }, [roomId])
+  }, [roomId, session, username])
 
   // Métodos para emitir eventos
   const emitStartGame = () => {

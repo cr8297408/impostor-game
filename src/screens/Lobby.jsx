@@ -9,17 +9,23 @@ import { Input } from '@/components/ui/Input'
 import { PlayerCard } from '@/components/game/PlayerCard'
 import { useGameStore } from '@/store/gameStore'
 import { useSocket } from '@/hooks/useSocket'
+import { useAuth } from '@/contexts/AuthContext'
 import { CATEGORIES, WORDS } from '@/lib/words'
 
 const Lobby = () => {
   const navigate = useNavigate()
   const { roomId } = useParams()
-  const { players, addPlayer, config, setConfig, startGame, isOnline } = useGameStore()
+  const { players, addPlayer, config, setConfig, startGame, isOnline, currentPlayerId, getPlayerById } = useGameStore()
+  const { user, isAuthenticated } = useAuth()
   const [newPlayerName, setNewPlayerName] = useState('')
   const [copied, setCopied] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
 
-  const { emitStartGame } = useSocket(roomId)
+  // Obtener username para Socket.io
+  const currentPlayer = getPlayerById(currentPlayerId)
+  const username = !isAuthenticated ? currentPlayer?.name : undefined
+
+  const { emitStartGame } = useSocket(roomId, username)
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return

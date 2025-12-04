@@ -1,50 +1,64 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Users, Wifi, WifiOff, Play } from 'lucide-react'
+import { Users, Wifi, WifiOff, Play, LogIn, UserPlus } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useGameStore } from '@/store/gameStore'
+import { useAuth } from '@/contexts/AuthContext'
+import UserProfile from '@/components/user/UserProfile'
 
 const Home = () => {
   const navigate = useNavigate()
   const { createRoom, joinRoom, addPlayer } = useGameStore()
+  const { user, isAuthenticated } = useAuth()
   const [playerName, setPlayerName] = useState('')
   const [roomCode, setRoomCode] = useState('')
   const [showJoin, setShowJoin] = useState(false)
 
+  // Obtener el nombre del jugador (autenticado o manual)
+  const getPlayerName = () => {
+    if (isAuthenticated) {
+      return user?.user_metadata?.username || user?.email?.split('@')[0] || 'Usuario'
+    }
+    return playerName.trim()
+  }
+
   const handleCreateOffline = () => {
-    if (!playerName.trim()) {
+    const name = getPlayerName()
+    if (!name) {
       alert('Por favor ingresa tu nombre')
       return
     }
 
     const roomId = createRoom(false)
-    const playerId = addPlayer(playerName.trim())
+    const playerId = addPlayer(name)
     navigate(`/lobby/${roomId}`)
   }
 
   const handleCreateOnline = () => {
-    if (!playerName.trim()) {
+    const name = getPlayerName()
+    if (!name) {
       alert('Por favor ingresa tu nombre')
       return
     }
 
     const roomId = createRoom(true)
-    const playerId = addPlayer(playerName.trim())
+    const playerId = addPlayer(name)
     navigate(`/lobby/${roomId}`)
   }
 
   const handleJoinOnline = () => {
-    if (!playerName.trim() || !roomCode.trim()) {
+    const name = getPlayerName()
+    if (!name || !roomCode.trim()) {
       alert('Por favor ingresa tu nombre y el código de sala')
       return
     }
 
     joinRoom(roomCode.toUpperCase().trim(), true)
-    addPlayer(playerName.trim())
+    addPlayer(name)
     navigate(`/lobby/${roomCode.toUpperCase().trim()}`)
   }
 
@@ -67,26 +81,51 @@ const Home = () => {
           </p>
         </motion.div>
 
-        {/* Formulario de nombre */}
-        <Card>
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">
-              ¿Cómo te llamas?
-            </h2>
-            <Input
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Tu nombre..."
-              className="text-center text-lg"
-              maxLength={20}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !showJoin) {
-                  handleCreateOffline()
-                }
-              }}
-            />
-          </div>
-        </Card>
+        {/* Perfil o formulario de nombre */}
+        {isAuthenticated ? (
+          <UserProfile />
+        ) : (
+          <>
+            <Card>
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-white">
+                  ¿Cómo te llamas?
+                </h2>
+                <Input
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Tu nombre..."
+                  className="text-center text-lg"
+                  maxLength={20}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !showJoin) {
+                      handleCreateOffline()
+                    }
+                  }}
+                />
+              </div>
+            </Card>
+
+            {/* Botones de autenticación */}
+            <div className="flex gap-4 justify-center">
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/login')}
+                className="flex items-center gap-2"
+              >
+                <LogIn size={20} />
+                Iniciar Sesión
+              </Button>
+              <Button
+                onClick={() => navigate('/register')}
+                className="flex items-center gap-2"
+              >
+                <UserPlus size={20} />
+                Registrarse
+              </Button>
+            </div>
+          </>
+        )}
 
         {/* Opciones de juego */}
         {!showJoin ? (
