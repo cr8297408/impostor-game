@@ -41,6 +41,8 @@ const initialState = {
     rounds: 3,
     category: 'general',
     timePerClue: 60,
+    gameTimer: 300, // 5 minutos por defecto para toda la partida
+    useGameTimer: false, // Si está activado, usa temporizador general en vez de por turno
   }
 }
 
@@ -177,6 +179,11 @@ export const useGameStore = create(
       } else {
         set({ currentTurn: nextTurn })
       }
+    },
+
+    // Terminar ronda anticipadamente
+    endRoundEarly: () => {
+      set({ phase: 'voting' })
     },
 
     // === VOTING ===

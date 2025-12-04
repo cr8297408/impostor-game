@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Eye, Users } from 'lucide-react'
+import { Send, Eye, Users, Flag } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ClueCard } from '@/components/game/ClueCard'
 import { Timer } from '@/components/game/Timer'
+import { GameTimer } from '@/components/game/GameTimer'
 import { useGame } from '@/hooks/useGame'
 import { useSocket } from '@/hooks/useSocket'
+import { useGameStore } from '@/store/gameStore'
 
 const Game = () => {
   const navigate = useNavigate()
@@ -28,12 +30,27 @@ const Game = () => {
     getActivePlayers,
   } = useGame()
 
+  const endRoundEarly = useGameStore((state) => state.endRoundEarly)
   const { emitClue } = useSocket(roomId)
   const [clueText, setClueText] = useState('')
   const [showWord, setShowWord] = useState(false)
 
   const currentPlayer = getCurrentTurnPlayer()
   const activePlayers = getActivePlayers()
+
+  // Manejar fin de tiempo general
+  const handleGameTimerComplete = () => {
+    if (roomId === 'OFFLINE') {
+      endRoundEarly()
+    }
+  }
+
+  // Manejar terminar ronda anticipadamente
+  const handleEndRound = () => {
+    if (confirm('¿Estás seguro de terminar la ronda y pasar a votación?')) {
+      endRoundEarly()
+    }
+  }
 
   const handleSubmitClue = () => {
     if (!clueText.trim()) return
@@ -135,8 +152,16 @@ const Game = () => {
           )}
         </Card>
 
-        {/* Timer (opcional) */}
-        {config.timePerClue > 0 && isMyTurn() && (
+        {/* Temporizador General (para toda la partida) */}
+        {config.useGameTimer && roomId === 'OFFLINE' && (
+          <GameTimer
+            totalSeconds={config.gameTimer}
+            onComplete={handleGameTimerComplete}
+          />
+        )}
+
+        {/* Timer por turno (opcional) */}
+        {!config.useGameTimer && config.timePerClue > 0 && isMyTurn() && (
           <Timer
             seconds={config.timePerClue}
             onComplete={handleSubmitClue}
@@ -193,15 +218,16 @@ const Game = () => {
           )}
         </Card>
 
-        {/* Botón ir a votación (solo para testing en modo offline) */}
-        {roomId === 'OFFLINE' && currentRound === maxRounds && (
+        {/* Botón terminar ronda anticipadamente */}
+        {roomId === 'OFFLINE' && clues.length > 0 && (
           <Button
             size="lg"
-            variant="danger"
-            onClick={() => navigate(`/voting/${roomId}`)}
+            variant="secondary"
+            onClick={handleEndRound}
             className="w-full"
           >
-            Ir a Votación
+            <Flag size={20} className="mr-2" />
+            Terminar Ronda y Votar
           </Button>
         )}
       </div>
