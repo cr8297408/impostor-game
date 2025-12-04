@@ -1,28 +1,42 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Clock, AlertCircle } from 'lucide-react'
 
 export const GameTimer = ({ totalSeconds, onComplete }) => {
-  const [timeLeft, setTimeLeft] = useState(totalSeconds)
+  const [timeLeft, setTimeLeft] = useState(totalSeconds || 0)
+  const hasCompleted = useRef(false)
 
   useEffect(() => {
-    if (timeLeft <= 0) {
+    // Reiniciar si cambia totalSeconds
+    setTimeLeft(totalSeconds || 0)
+    hasCompleted.current = false
+  }, [totalSeconds])
+
+  useEffect(() => {
+    if (timeLeft <= 0 && !hasCompleted.current) {
+      hasCompleted.current = true
       onComplete?.()
       return
     }
 
+    if (timeLeft <= 0) return
+
     const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1)
+      setTimeLeft(prev => Math.max(0, prev - 1))
     }, 1000)
 
     return () => clearInterval(timer)
   }, [timeLeft, onComplete])
 
-  const minutes = Math.floor(timeLeft / 60)
-  const seconds = timeLeft % 60
-  const percentage = (timeLeft / totalSeconds) * 100
-  const isLow = timeLeft <= 60 // Último minuto
-  const isCritical = timeLeft <= 30 // Últimos 30 segundos
+  // Asegurar que los valores sean válidos para evitar NaN/Infinity
+  const safeTimeLeft = Math.max(0, timeLeft || 0)
+  const safeTotalSeconds = Math.max(1, totalSeconds || 1)
+  
+  const minutes = Math.floor(safeTimeLeft / 60)
+  const seconds = safeTimeLeft % 60
+  const percentage = Math.max(0, Math.min(100, (safeTimeLeft / safeTotalSeconds) * 100))
+  const isLow = safeTimeLeft <= 60 && safeTimeLeft > 0 // Último minuto
+  const isCritical = safeTimeLeft <= 30 && safeTimeLeft > 0 // Últimos 30 segundos
 
   return (
     <motion.div
