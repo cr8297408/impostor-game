@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-impostor-darker text-white antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-black/30 backdrop-blur-xl border border-white/10;
+  }
+
+  .gradient-purple-pink {
+    @apply bg-gradient-to-br from-impostor-purple to-impostor-pink;
+  }
+
+  .gradient-blue-purple {
+    @apply bg-gradient-to-br from-impostor-blue to-impostor-purple;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-impostor-purple via-impostor-pink to-impostor-blue;
+  }
+}
