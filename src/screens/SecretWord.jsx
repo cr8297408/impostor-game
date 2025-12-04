@@ -17,7 +17,6 @@ const SecretWord = () => {
 
   const isLocalMode = roomId === 'OFFLINE'
   const currentPlayer = isLocalMode ? players[currentPlayerIndex] : null
-  const allPlayersViewed = playersViewed.size === players.length
 
   const getCurrentPlayerRole = () => {
     if (!isLocalMode) return isImpostor()
@@ -207,7 +206,7 @@ const SecretWord = () => {
                 size="lg"
                 onClick={handleContinue}
                 className="w-full"
-                disabled={!revealed || !allPlayersViewed}
+                disabled={!revealed || playersViewed.size !== players.length - 1}
               >
                 Iniciar Juego
                 <ArrowRight size={24} className="ml-2" />

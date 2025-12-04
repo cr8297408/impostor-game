@@ -53,6 +53,34 @@ export const useGameStore = create(
     // === RESET ===
     resetGame: () => set(initialState),
 
+    // Reset para revancha - mantiene jugadores, roomId y config
+    resetForRematch: () => {
+      const state = get()
+      set({
+        // Mantener
+        roomId: state.roomId,
+        isOnline: state.isOnline,
+        players: state.players.map(p => ({
+          ...p,
+          isImpostor: false,
+          isEliminated: false,
+          votes: 0,
+        })),
+        currentPlayerId: state.currentPlayerId,
+        config: state.config,
+
+        // Resetear estado de juego
+        phase: 'lobby',
+        secretWord: null,
+        currentRound: 1,
+        currentTurn: 0,
+        clues: [],
+        votes: {},
+        eliminatedPlayer: null,
+        winner: null,
+      })
+    },
+
     // === ROOM MANAGEMENT ===
     createRoom: (isOnline = false) => {
       const roomId = isOnline ? Math.random().toString(36).substring(2, 8).toUpperCase() : 'OFFLINE'

@@ -13,8 +13,10 @@ export const useGame = () => {
     store.addClue(store.currentPlayerId, text.trim())
   }
 
-  const submitVote = (playerId) => {
-    store.vote(store.currentPlayerId, playerId)
+  const submitVote = (playerId, voterId = null) => {
+    // En modo local, usar el voterId proporcionado; en online, usar currentPlayerId
+    const actualVoterId = voterId || store.currentPlayerId
+    store.vote(actualVoterId, playerId)
   }
 
   const finishVoting = () => {

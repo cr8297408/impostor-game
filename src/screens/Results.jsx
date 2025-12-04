@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/Button'
 import { PlayerCard } from '@/components/game/PlayerCard'
 import { useGame } from '@/hooks/useGame'
 import { usePlayers } from '@/hooks/usePlayers'
+import { useGameStore } from '@/store/gameStore'
 
 const Results = () => {
   const navigate = useNavigate()
   const { roomId } = useParams()
   const { winner, eliminatedPlayer, resetGame, secretWord } = useGame()
   const { getImpostor, getCivilians } = usePlayers()
+  const { resetForRematch } = useGameStore()
 
   const impostor = getImpostor()
   const civilians = getCivilians()
@@ -24,7 +26,7 @@ const Results = () => {
   }
 
   const handleRematch = () => {
-    resetGame()
+    resetForRematch()
     navigate(`/lobby/${roomId}`)
   }
 

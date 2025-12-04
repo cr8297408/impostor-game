@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Vote, AlertCircle } from 'lucide-react'
+import { Vote, AlertCircle, UserCircle } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -26,18 +26,55 @@ const Voting = () => {
   const { emitVote } = useSocket(roomId)
   const activePlayers = getActivePlayers()
   const myVote = votes[currentPlayerId]
+  const isLocalMode = roomId === 'OFFLINE'
 
+  // Estado para modo local: quién está votando actualmente
+  const [currentVoterId, setCurrentVoterId] = useState(null)
+  const [showVoterSelection, setShowVoterSelection] = useState(isLocalMode)
+
+  // Seleccionar quién está votando (solo modo local)
+  const handleSelectVoter = (voterId) => {
+    setCurrentVoterId(voterId)
+    setShowVoterSelection(false)
+  }
+
+  // Votar por un jugador
   const handleVote = (playerId) => {
-    if (hasVoted()) return
-    if (playerId === currentPlayerId) {
-      alert('No puedes votarte a ti mismo')
-      return
-    }
+    if (isLocalMode) {
+      // Modo local: usar el voterId seleccionado
+      if (!currentVoterId) {
+        alert('Primero selecciona quién eres')
+        return
+      }
 
-    submitVote(playerId)
+      if (playerId === currentVoterId) {
+        alert('No puedes votarte a ti mismo')
+        return
+      }
 
-    // Si es online, emitir al servidor
-    if (roomId !== 'OFFLINE') {
+      if (votes[currentVoterId]) {
+        alert('Este jugador ya votó')
+        return
+      }
+
+      // Registrar voto con el ID del votante seleccionado
+      submitVote(playerId, currentVoterId)
+
+      // Resetear para el siguiente votante
+      setCurrentVoterId(null)
+      setShowVoterSelection(true)
+    } else {
+      // Modo online: usar currentPlayerId
+      if (hasVoted()) {
+        return
+      }
+
+      if (playerId === currentPlayerId) {
+        alert('No puedes votarte a ti mismo')
+        return
+      }
+
+      submitVote(playerId)
       emitVote(playerId)
     }
   }
@@ -100,8 +137,46 @@ const Voting = () => {
           </div>
         </Card>
 
+        {/* Selección de votante (solo modo local) */}
+        {isLocalMode && showVoterSelection && (
+          <Card className="bg-impostor-purple/10">
+            <div className="text-center space-y-4">
+              <UserCircle size={48} className="mx-auto text-impostor-purple" />
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  ¿Quién eres tú?
+                </h2>
+                <p className="text-white/60">
+                  Selecciona tu jugador para votar
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {activePlayers.map((player) => {
+                  const hasVotedAlready = votes[player.id]
+                  return (
+                    <div key={player.id} className="relative">
+                      <PlayerCard
+                        player={player}
+                        onClick={!hasVotedAlready ? () => handleSelectVoter(player.id) : undefined}
+                      />
+                      {hasVotedAlready && (
+                        <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center pointer-events-none">
+                          <div className="bg-impostor-green rounded-full p-3">
+                            <Vote size={32} className="text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Advertencia */}
-        {!hasVoted() && (
+        {!isLocalMode && !hasVoted() && (
           <Card className="bg-yellow-500/10 border-yellow-500/20">
             <div className="flex items-start gap-3">
               <AlertCircle className="text-yellow-500 flex-shrink-0" size={24} />
@@ -117,24 +192,42 @@ const Voting = () => {
           </Card>
         )}
 
-        {/* Lista de jugadores */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {activePlayers.map((player) => {
-            const playerVotes = Object.values(votes).filter(v => v === player.id).length
-            const isMyVote = myVote === player.id
-            const isMe = player.id === currentPlayerId
+        {/* Jugador actual votando (modo local) */}
+        {isLocalMode && currentVoterId && (
+          <Card className="bg-impostor-purple/20">
+            <div className="text-center">
+              <p className="text-white/60 text-sm">Votando como:</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {activePlayers.find(p => p.id === currentVoterId)?.name}
+              </p>
+              <p className="text-white/60 text-sm mt-2">
+                Vota por quién crees que es el impostor
+              </p>
+            </div>
+          </Card>
+        )}
 
-            return (
-              <PlayerCard
-                key={player.id}
-                player={player}
-                onClick={() => !isMe && !hasVoted() && handleVote(player.id)}
-                votes={playerVotes}
-                selected={isMyVote}
-              />
-            )
-          })}
-        </div>
+        {/* Lista de jugadores para votar */}
+        {(!isLocalMode || (isLocalMode && !showVoterSelection)) && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {activePlayers.map((player) => {
+              const playerVotes = Object.values(votes).filter(v => v === player.id).length
+              const isMyVote = myVote === player.id
+              const isMe = player.id === currentPlayerId
+              const canVote = roomId === 'OFFLINE' || (!isMe && !hasVoted())
+
+              return (
+                <PlayerCard
+                  key={player.id}
+                  player={player}
+                  onClick={canVote ? () => handleVote(player.id) : undefined}
+                  votes={playerVotes}
+                  selected={isMyVote}
+                />
+              )
+            })}
+          </div>
+        )}
 
         {/* Botón finalizar votación */}
         {allPlayersVoted() && (
@@ -153,9 +246,18 @@ const Voting = () => {
         )}
 
         {!allPlayersVoted() && (
-          <p className="text-center text-white/60">
-            Esperando a que todos voten...
-          </p>
+          <Card className="bg-impostor-blue/10">
+            <p className="text-center text-white/80">
+              {roomId === 'OFFLINE'
+                ? '🗳️ Cada jugador debe votar por turno'
+                : '⏳ Esperando votación de todos los jugadores...'}
+            </p>
+            {roomId === 'OFFLINE' && (
+              <p className="text-center text-white/60 text-sm mt-2">
+                Pasen el dispositivo entre ustedes para votar
+              </p>
+            )}
+          </Card>
         )}
       </div>
     </Container>

@@ -118,58 +118,76 @@ const Game = () => {
           </AnimatePresence>
         </Card>
 
-        {/* Turno actual */}
-        <Card className={`${
-          isMyTurn() ? 'ring-4 ring-impostor-purple' : ''
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/60 text-sm">Turno de:</p>
-              <p className="text-2xl font-bold text-white">
-                {currentPlayer?.name || 'Cargando...'}
-              </p>
+        {/* Turno actual - Solo en modo online */}
+        {roomId !== 'OFFLINE' && (
+          <Card className={`${
+            isMyTurn() ? 'ring-4 ring-impostor-purple' : ''
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white/60 text-sm">Turno de:</p>
+                <p className="text-2xl font-bold text-white">
+                  {currentPlayer?.name || 'Cargando...'}
+                </p>
+              </div>
+
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-4"
+                style={{
+                  backgroundColor: currentPlayer?.avatar,
+                  borderColor: currentPlayer?.avatar,
+                }}
+              >
+                {currentPlayer?.name?.[0]?.toUpperCase()}
+              </div>
             </div>
 
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-4"
-              style={{
-                backgroundColor: currentPlayer?.avatar,
-                borderColor: currentPlayer?.avatar,
-              }}
-            >
-              {currentPlayer?.name?.[0]?.toUpperCase()}
-            </div>
-          </div>
+            {isMyTurn() && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-3 text-impostor-purple font-semibold"
+              >
+                ¡Es tu turno! Da una pista sutil.
+              </motion.p>
+            )}
+          </Card>
+        )}
 
-          {isMyTurn() && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-3 text-impostor-purple font-semibold"
-            >
-              ¡Es tu turno! Da una pista sutil.
-            </motion.p>
-          )}
-        </Card>
-
-        {/* Temporizador General (para toda la partida) */}
-        {config.useGameTimer && roomId === 'OFFLINE' && (
+        {/* Temporizador General (solo modo local) */}
+        {roomId === 'OFFLINE' && (
           <GameTimer
             totalSeconds={config.gameTimer}
             onComplete={handleGameTimerComplete}
           />
         )}
 
-        {/* Timer por turno (opcional) */}
-        {!config.useGameTimer && config.timePerClue > 0 && isMyTurn() && (
+        {/* Timer por turno (solo modo online) */}
+        {roomId !== 'OFFLINE' && config.timePerClue > 0 && isMyTurn() && (
           <Timer
             seconds={config.timePerClue}
             onComplete={handleSubmitClue}
           />
         )}
 
-        {/* Formulario de pista */}
-        {isMyTurn() && (
+        {/* Instrucciones para modo local */}
+        {roomId === 'OFFLINE' && (
+          <Card className="bg-impostor-purple/10">
+            <div className="text-center space-y-3">
+              <h3 className="text-xl font-bold text-white">💬 Modo Discusión</h3>
+              <p className="text-white/80">
+                Conversen libremente sobre la palabra secreta. Los civiles deben dar pistas sutiles sin revelarla,
+                y el impostor debe fingir que la conoce.
+              </p>
+              <p className="text-white/60 text-sm">
+                Cuando termine el tiempo o presionen "Terminar Ronda", pasarán a votar.
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {/* Formulario de pista (solo modo online) */}
+        {roomId !== 'OFFLINE' && isMyTurn() && (
           <Card>
             <div className="space-y-3">
               <label className="text-white font-semibold">
@@ -199,27 +217,29 @@ const Game = () => {
           </Card>
         )}
 
-        {/* Lista de pistas */}
-        <Card>
-          <h3 className="text-xl font-bold text-white mb-4">
-            Pistas dadas ({clues.length})
-          </h3>
+        {/* Lista de pistas (solo modo online) */}
+        {roomId !== 'OFFLINE' && (
+          <Card>
+            <h3 className="text-xl font-bold text-white mb-4">
+              Pistas dadas ({clues.length})
+            </h3>
 
-          {clues.length === 0 ? (
-            <div className="text-center py-8 text-white/40">
-              Aún no hay pistas. ¡Empieza a jugar!
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {clues.map((clue, index) => (
-                <ClueCard key={index} clue={clue} index={index} />
-              ))}
-            </div>
-          )}
-        </Card>
+            {clues.length === 0 ? (
+              <div className="text-center py-8 text-white/40">
+                Aún no hay pistas. ¡Empieza a jugar!
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {clues.map((clue, index) => (
+                  <ClueCard key={index} clue={clue} index={index} />
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
 
-        {/* Botón terminar ronda anticipadamente */}
-        {roomId === 'OFFLINE' && clues.length > 0 && (
+        {/* Botón terminar ronda anticipadamente (modo local) */}
+        {roomId === 'OFFLINE' && (
           <Button
             size="lg"
             variant="secondary"
@@ -227,7 +247,7 @@ const Game = () => {
             className="w-full"
           >
             <Flag size={20} className="mr-2" />
-            Terminar Ronda y Votar
+            Terminar y Votar
           </Button>
         )}
       </div>

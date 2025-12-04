@@ -173,66 +173,89 @@ const Lobby = () => {
                   </select>
                 </div>
 
-                {/* Rondas */}
-                <div>
-                  <label className="text-white/80 text-sm block mb-2">
-                    Número de rondas: {config.rounds}
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={config.rounds}
-                    onChange={(e) => setConfig({ rounds: parseInt(e.target.value) })}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Tipo de temporizador */}
-                <div>
-                  <label className="text-white/80 text-sm block mb-2">
-                    Modo de temporizador
-                  </label>
-                  <div className="flex gap-3">
-                    <Button
-                      size="sm"
-                      variant={!config.useGameTimer ? "primary" : "secondary"}
-                      onClick={() => setConfig({ useGameTimer: false })}
-                      className="flex-1"
-                    >
-                      Por turno
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={config.useGameTimer ? "primary" : "secondary"}
-                      onClick={() => setConfig({ useGameTimer: true })}
-                      className="flex-1"
-                    >
-                      General
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Tiempo por pista (solo si no usa timer general) */}
-                {!config.useGameTimer && (
+                {/* Rondas (solo modo online) */}
+                {isOnline && (
                   <div>
                     <label className="text-white/80 text-sm block mb-2">
-                      Tiempo por pista: {config.timePerClue}s
+                      Número de rondas: {config.rounds}
                     </label>
                     <input
                       type="range"
-                      min="30"
-                      max="120"
-                      step="10"
-                      value={config.timePerClue}
-                      onChange={(e) => setConfig({ timePerClue: parseInt(e.target.value) })}
+                      min="1"
+                      max="5"
+                      value={config.rounds}
+                      onChange={(e) => setConfig({ rounds: parseInt(e.target.value) })}
                       className="w-full"
                     />
                   </div>
                 )}
 
-                {/* Temporizador general */}
-                {config.useGameTimer && (
+                {/* Configuración de tiempo */}
+                {isOnline ? (
+                  <>
+                    {/* Tipo de temporizador (solo modo online) */}
+                    <div>
+                      <label className="text-white/80 text-sm block mb-2">
+                        Modo de temporizador
+                      </label>
+                      <div className="flex gap-3">
+                        <Button
+                          size="sm"
+                          variant={!config.useGameTimer ? "primary" : "secondary"}
+                          onClick={() => setConfig({ useGameTimer: false })}
+                          className="flex-1"
+                        >
+                          Por turno
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={config.useGameTimer ? "primary" : "secondary"}
+                          onClick={() => setConfig({ useGameTimer: true })}
+                          className="flex-1"
+                        >
+                          General
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Tiempo por pista (solo si no usa timer general) */}
+                    {!config.useGameTimer && (
+                      <div>
+                        <label className="text-white/80 text-sm block mb-2">
+                          Tiempo por pista: {config.timePerClue}s
+                        </label>
+                        <input
+                          type="range"
+                          min="30"
+                          max="120"
+                          step="10"
+                          value={config.timePerClue}
+                          onChange={(e) => setConfig({ timePerClue: parseInt(e.target.value) })}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+
+                    {/* Temporizador general */}
+                    {config.useGameTimer && (
+                      <div>
+                        <label className="text-white/80 text-sm block mb-2">
+                          Tiempo total de juego: {Math.floor(config.gameTimer / 60)}m {config.gameTimer % 60}s
+                        </label>
+                        <input
+                          type="range"
+                          min="120"
+                          max="900"
+                          step="30"
+                          value={config.gameTimer}
+                          onChange={(e) => setConfig({ gameTimer: parseInt(e.target.value) })}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Temporizador para modo local */
                   <div>
                     <label className="text-white/80 text-sm block mb-2">
                       Tiempo total de juego: {Math.floor(config.gameTimer / 60)}m {config.gameTimer % 60}s
