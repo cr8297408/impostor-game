@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, UserCheck } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -10,8 +10,32 @@ import { useState } from 'react'
 const SecretWord = () => {
   const navigate = useNavigate()
   const { roomId } = useParams()
-  const { secretWord, isImpostor, moveToClues } = useGame()
+  const { secretWord, isImpostor, moveToClues, players, isOnline } = useGame()
   const [revealed, setRevealed] = useState(false)
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0)
+  const [playersViewed, setPlayersViewed] = useState(new Set())
+
+  const isLocalMode = roomId === 'OFFLINE'
+  const currentPlayer = isLocalMode ? players[currentPlayerIndex] : null
+  const allPlayersViewed = playersViewed.size === players.length
+
+  const getCurrentPlayerRole = () => {
+    if (!isLocalMode) return isImpostor()
+    return currentPlayer?.isImpostor || false
+  }
+
+  const handleNextPlayer = () => {
+    // Marcar que el jugador actual vio su rol
+    if (revealed && currentPlayer) {
+      setPlayersViewed(prev => new Set([...prev, currentPlayer.id]))
+    }
+
+    // Si hay más jugadores, pasar al siguiente
+    if (currentPlayerIndex < players.length - 1) {
+      setCurrentPlayerIndex(prev => prev + 1)
+      setRevealed(false) // Ocultar la tarjeta para el siguiente jugador
+    }
+  }
 
   const handleContinue = () => {
     moveToClues()
@@ -21,15 +45,34 @@ const SecretWord = () => {
   return (
     <Container>
       <div className="space-y-8 text-center">
-        {/* Título */}
+        {/* Título y nombre del jugador actual */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <h1 className="text-4xl font-bold text-white mb-2">
-            Tu Rol
+            {isLocalMode ? 'Tu Rol' : 'Tu Rol'}
           </h1>
-          <p className="text-white/60">
+          {isLocalMode && currentPlayer && (
+            <div className="mt-4 mb-2">
+              <p className="text-white/40 text-sm">Turno de:</p>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
+                  style={{ backgroundColor: currentPlayer.avatar }}
+                >
+                  {currentPlayer.name[0].toUpperCase()}
+                </div>
+                <p className="text-3xl font-bold text-white">
+                  {currentPlayer.name}
+                </p>
+              </div>
+              <p className="text-white/40 text-sm mt-2">
+                Jugador {currentPlayerIndex + 1} de {players.length}
+              </p>
+            </div>
+          )}
+          <p className="text-white/60 mt-4">
             Toca la tarjeta para revelar
           </p>
         </motion.div>
@@ -44,7 +87,11 @@ const SecretWord = () => {
             hover
             onClick={() => setRevealed(!revealed)}
             className={`relative overflow-hidden ${
-              isImpostor() ? 'bg-gradient-to-br from-red-500/20 to-red-900/20' : 'bg-gradient-to-br from-green-500/20 to-green-900/20'
+              isLocalMode
+                ? 'bg-gradient-to-br from-impostor-purple/20 to-impostor-blue/20'
+                : isImpostor()
+                  ? 'bg-gradient-to-br from-red-500/20 to-red-900/20'
+                  : 'bg-gradient-to-br from-green-500/20 to-green-900/20'
             }`}
           >
             <div className="min-h-[300px] flex flex-col items-center justify-center space-y-6">
@@ -62,16 +109,20 @@ const SecretWord = () => {
                 className="space-y-4"
               >
                 <div className="text-7xl">
-                  {isImpostor() ? '👹' : '👨‍🦰'}
+                  {getCurrentPlayerRole() ? '👹' : '👨‍🦰'}
                 </div>
 
                 <h2 className={`text-3xl font-bold ${
-                  isImpostor() ? 'text-red-400' : 'text-green-400'
+                  isLocalMode
+                    ? 'text-impostor-purple'
+                    : getCurrentPlayerRole()
+                      ? 'text-red-400'
+                      : 'text-green-400'
                 }`}>
-                  {isImpostor() ? 'ERES EL IMPOSTOR' : 'ERES CIVIL'}
+                  {getCurrentPlayerRole() ? 'ERES EL IMPOSTOR' : 'ERES CIVIL'}
                 </h2>
 
-                {!isImpostor() && (
+                {!getCurrentPlayerRole() && (
                   <div className="space-y-2">
                     <p className="text-white/60">Tu palabra secreta es:</p>
                     <p className="text-5xl font-bold text-white">
@@ -80,7 +131,7 @@ const SecretWord = () => {
                   </div>
                 )}
 
-                {isImpostor() && (
+                {getCurrentPlayerRole() && (
                   <p className="text-white/80 max-w-md">
                     No conoces la palabra secreta. Debes fingir que la conoces usando las pistas de los demás.
                   </p>
@@ -120,16 +171,72 @@ const SecretWord = () => {
           </div>
         </Card>
 
-        {/* Botón continuar */}
-        <Button
-          size="lg"
-          onClick={handleContinue}
-          className="w-full"
-          disabled={!revealed}
-        >
-          Continuar al Juego
-          <ArrowRight size={24} className="ml-2" />
-        </Button>
+        {/* Botones */}
+        {isLocalMode ? (
+          <>
+            {/* Indicador de progreso */}
+            <div className="flex justify-center gap-2 py-4">
+              {players.map((player, index) => (
+                <div
+                  key={player.id}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    playersViewed.has(player.id)
+                      ? 'bg-impostor-green scale-110'
+                      : index === currentPlayerIndex
+                        ? 'bg-impostor-purple animate-pulse'
+                        : 'bg-white/20'
+                  }`}
+                  title={player.name}
+                />
+              ))}
+            </div>
+
+            {/* Botón siguiente jugador o iniciar */}
+            {currentPlayerIndex < players.length - 1 ? (
+              <Button
+                size="lg"
+                onClick={handleNextPlayer}
+                className="w-full"
+                disabled={!revealed}
+              >
+                <UserCheck size={24} className="mr-2" />
+                Siguiente Jugador
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                onClick={handleContinue}
+                className="w-full"
+                disabled={!revealed || !allPlayersViewed}
+              >
+                Iniciar Juego
+                <ArrowRight size={24} className="ml-2" />
+              </Button>
+            )}
+
+            {/* Mensaje de ayuda */}
+            {!revealed && (
+              <p className="text-white/40 text-sm">
+                👆 Toca la tarjeta para revelar tu rol
+              </p>
+            )}
+            {revealed && currentPlayerIndex < players.length - 1 && (
+              <p className="text-white/40 text-sm">
+                ✅ Pasa el dispositivo al siguiente jugador
+              </p>
+            )}
+          </>
+        ) : (
+          <Button
+            size="lg"
+            onClick={handleContinue}
+            className="w-full"
+            disabled={!revealed}
+          >
+            Continuar al Juego
+            <ArrowRight size={24} className="ml-2" />
+          </Button>
+        )}
       </div>
     </Container>
   )
