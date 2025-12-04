@@ -3,7 +3,7 @@ import AdBanner from './AdBanner'
 /**
  * Layout que envuelve el contenido de la aplicación con anuncios
  * - En desktop: anuncios laterales (izquierda y derecha)
- * - En mobile: anuncio inferior fijo
+ * - En mobile: anuncios superior e inferior fijos
  */
 const AdLayout = ({ children }) => {
   return (
@@ -36,8 +36,17 @@ const AdLayout = ({ children }) => {
 
       {/* Layout para mobile */}
       <div className="lg:hidden flex flex-col min-h-screen">
+        {/* Anuncio superior - Mobile (fijo) */}
+        <div className="fixed top-0 left-0 right-0 bg-impostor-darker/95 backdrop-blur-sm border-b border-impostor-light/20 z-50">
+          <AdBanner
+            slot="4098087716"
+            format="horizontal"
+            className="w-full"
+          />
+        </div>
+
         {/* Contenido principal */}
-        <main className="flex-1 pb-24">
+        <main className="flex-1 pt-24 pb-24">
           {children}
         </main>
 
