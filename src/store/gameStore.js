@@ -18,6 +18,7 @@ const initialState = {
   // Game State
   phase: 'home', // 'home' | 'lobby' | 'secret' | 'clues' | 'voting' | 'results'
   secretWord: null,
+  impostorHint: null, // Pista falsa para el impostor
   category: 'general',
 
   // Rounds & Turns
@@ -72,6 +73,7 @@ export const useGameStore = create(
         // Resetear estado de juego
         phase: 'lobby',
         secretWord: null,
+        impostorHint: null,
         currentRound: 1,
         currentTurn: 0,
         clues: [],
@@ -130,7 +132,7 @@ export const useGameStore = create(
     setCurrentPlayer: (playerId) => set({ currentPlayerId: playerId }),
 
     // === GAME START ===
-    startGame: (words) => {
+    startGame: (words, hints = null) => {
       const state = get()
 
       if (state.players.length < 3) {
@@ -151,9 +153,20 @@ export const useGameStore = create(
       const categoryWords = words[state.config.category] || words.general
       const randomWord = categoryWords[Math.floor(Math.random() * categoryWords.length)]
 
+      // Seleccionar pista falsa para el impostor
+      let impostorHint = null
+      if (hints && hints[randomWord]) {
+        const wordHints = hints[randomWord]
+        impostorHint = wordHints[Math.floor(Math.random() * wordHints.length)]
+      } else {
+        // Pista genérica si no hay pistas disponibles
+        impostorHint = 'Relacionado con ' + state.config.category
+      }
+
       set({
         players: updatedPlayers,
         secretWord: randomWord,
+        impostorHint: impostorHint,
         phase: 'secret',
         currentRound: 1,
         currentTurn: 0,

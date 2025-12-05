@@ -9,21 +9,30 @@ import { Input } from '@/components/ui/Input'
 import { PlayerCard } from '@/components/game/PlayerCard'
 import { useGameStore } from '@/store/gameStore'
 import { useSocket } from '@/hooks/useSocket'
-import { CATEGORIES, WORDS } from '@/lib/words'
+import { CATEGORIES } from '@/lib/words'
 
 const Lobby = () => {
   const navigate = useNavigate()
   const { roomId } = useParams()
-  const { players, addPlayer, config, setConfig, startGame, isOnline } = useGameStore()
+  const { players, addPlayer, config, setConfig, isOnline } = useGameStore()
   const [newPlayerName, setNewPlayerName] = useState('')
   const [copied, setCopied] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
 
-  const { emitStartGame } = useSocket(roomId)
+  const { emitStartGame, emitAddPlayer } = useSocket(roomId)
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return
-    addPlayer(newPlayerName.trim())
+    const playerId = addPlayer(newPlayerName.trim())
+
+    // En modo local, también notificar al servidor
+    if (!isOnline && playerId) {
+      const player = useGameStore.getState().getPlayerById(playerId)
+      if (player) {
+        emitAddPlayer(player)
+      }
+    }
+
     setNewPlayerName('')
   }
 
@@ -39,12 +48,8 @@ const Lobby = () => {
       return
     }
 
-    if (isOnline) {
-      emitStartGame()
-    } else {
-      startGame(WORDS)
-      navigate(`/secret/${roomId}`)
-    }
+    // Siempre usar el servidor
+    emitStartGame()
   }
 
   // Escuchar cuando el juego comienza en modo online

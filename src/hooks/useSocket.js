@@ -9,7 +9,7 @@ export const useSocket = (roomId) => {
   const store = useGameStore()
 
   useEffect(() => {
-    if (!roomId || roomId === 'OFFLINE') return
+    if (!roomId) return
 
     // Conectar al servidor
     socketRef.current = io(SOCKET_URL, {
@@ -90,10 +90,20 @@ export const useSocket = (roomId) => {
     }
   }
 
+  const emitAddPlayer = (player) => {
+    if (socketRef.current) {
+      socketRef.current.emit('add-player', {
+        roomId,
+        player
+      })
+    }
+  }
+
   return {
     socket: socketRef.current,
     emitStartGame,
     emitClue,
     emitVote,
+    emitAddPlayer,
   }
 }

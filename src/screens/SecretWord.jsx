@@ -10,7 +10,7 @@ import { useState } from 'react'
 const SecretWord = () => {
   const navigate = useNavigate()
   const { roomId } = useParams()
-  const { secretWord, isImpostor, moveToClues, players, isOnline } = useGame()
+  const { secretWord, impostorHint, isImpostor, moveToClues, players, isOnline } = useGame()
   const [revealed, setRevealed] = useState(false)
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0)
   const [playersViewed, setPlayersViewed] = useState(new Set())
@@ -131,9 +131,24 @@ const SecretWord = () => {
                 )}
 
                 {getCurrentPlayerRole() && (
-                  <p className="text-white/80 max-w-md">
-                    No conoces la palabra secreta. Debes fingir que la conoces usando las pistas de los demás.
-                  </p>
+                  <div className="space-y-4 max-w-md">
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                      <p className="text-yellow-400 font-bold text-sm mb-2">
+                        💡 PISTA SUGERIDA
+                      </p>
+                      <p className="text-3xl font-bold text-yellow-300">
+                        "{impostorHint}"
+                      </p>
+                    </div>
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                      <p className="text-red-300 text-sm font-semibold mb-1">
+                        ⚠️ IMPORTANTE
+                      </p>
+                      <p className="text-white/80 text-sm">
+                        Usa esta palabra en tu <span className="text-red-400 font-bold">PRIMERA RONDA</span> para pasar desapercibido. Luego, finge usando las pistas de los demás.
+                      </p>
+                    </div>
+                  </div>
                 )}
               </motion.div>
 

@@ -1,11 +1,12 @@
 import { useGameStore } from '@/store/gameStore'
-import { WORDS } from '@/lib/words'
 
 export const useGame = () => {
   const store = useGameStore()
 
+  // startGame ya no se usa aquí - el servidor maneja todo
   const startGame = () => {
-    store.startGame(WORDS)
+    // Esta función ya no se usa, el servidor maneja el inicio del juego
+    console.warn('startGame() llamado pero ya no se usa - el servidor maneja el inicio')
   }
 
   const addClue = (text) => {
