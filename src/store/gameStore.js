@@ -85,7 +85,9 @@ export const useGameStore = create(
 
     // === ROOM MANAGEMENT ===
     createRoom: (isOnline = false) => {
-      const roomId = isOnline ? Math.random().toString(36).substring(2, 8).toUpperCase() : 'OFFLINE'
+      const roomId = isOnline
+        ? Math.random().toString(36).substring(2, 8).toUpperCase()
+        : `OFFLINE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
       set({ roomId, isOnline, phase: 'lobby' })
       return roomId
     },

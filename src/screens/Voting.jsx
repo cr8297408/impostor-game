@@ -26,7 +26,7 @@ const Voting = () => {
   const { emitVote } = useSocket(roomId)
   const activePlayers = getActivePlayers()
   const myVote = votes[currentPlayerId]
-  const isLocalMode = roomId === 'OFFLINE'
+  const isLocalMode = roomId.startsWith('OFFLINE')
 
   // Estado para modo local: quién está votando actualmente
   const [currentVoterId, setCurrentVoterId] = useState(null)
@@ -212,9 +212,12 @@ const Voting = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {activePlayers.map((player) => {
               const playerVotes = Object.values(votes).filter(v => v === player.id).length
-              const isMyVote = myVote === player.id
-              const isMe = player.id === currentPlayerId
-              const canVote = roomId === 'OFFLINE' || (!isMe && !hasVoted())
+
+              // En modo local, usar currentVoterId; en online, usar currentPlayerId
+              const activeVoterId = isLocalMode ? currentVoterId : currentPlayerId
+              const isMyVote = isLocalMode ? false : (myVote === player.id)
+              const isMe = player.id === activeVoterId
+              const canVote = isLocalMode ? !isMe : (!isMe && !hasVoted())
 
               return (
                 <PlayerCard
@@ -248,11 +251,11 @@ const Voting = () => {
         {!allPlayersVoted() && (
           <Card className="bg-impostor-blue/10">
             <p className="text-center text-white/80">
-              {roomId === 'OFFLINE'
+              {roomId.startsWith('OFFLINE')
                 ? '🗳️ Cada jugador debe votar por turno'
                 : '⏳ Esperando votación de todos los jugadores...'}
             </p>
-            {roomId === 'OFFLINE' && (
+            {roomId.startsWith('OFFLINE') && (
               <p className="text-center text-white/60 text-sm mt-2">
                 Pasen el dispositivo entre ustedes para votar
               </p>

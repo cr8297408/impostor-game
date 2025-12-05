@@ -15,7 +15,7 @@ const SecretWord = () => {
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0)
   const [playersViewed, setPlayersViewed] = useState(new Set())
 
-  const isLocalMode = roomId === 'OFFLINE'
+  const isLocalMode = roomId.startsWith('OFFLINE')
   const currentPlayer = isLocalMode ? players[currentPlayerIndex] : null
 
   const getCurrentPlayerRole = () => {

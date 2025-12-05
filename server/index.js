@@ -394,6 +394,12 @@ export const WORDS = {
 
 }
 
+// La categoría "general" contiene todas las palabras de todas las categorías
+WORDS.general = Object.keys(WORDS)
+  .filter(key => key !== 'general')
+  .flatMap(key => WORDS[key])
+  .filter((word, index, self) => self.indexOf(word) === index) // Eliminar duplicados
+
 // Pistas falsas para el impostor (palabras relacionadas que puede usar en la primera ronda)
 export const HINTS = {
   // General
@@ -1364,12 +1370,27 @@ io.on('connection', (socket) => {
     console.log(`Jugador ${playerId} se unió a la sala ${roomId}`)
 
     // Enviar estado actual de la sala
-    const room = rooms.get(roomId)
-    if (room) {
-      socket.emit('room-state', room)
-    } else {
-      // Crear nueva sala
-      rooms.set(roomId, {
+    let room = rooms.get(roomId)
+
+    // Si es modo local (OFFLINE) y la sala existe, resetearla
+    if (roomId.startsWith('OFFLINE') && room) {
+      console.log('Reseteando sala OFFLINE para nueva partida')
+      room = {
+        roomId,
+        players: [],
+        phase: 'lobby',
+        config: room.config || {
+          maxPlayers: 8,
+          rounds: 3,
+          category: 'general',
+          timePerClue: 60,
+        },
+        impostorHistory: []
+      }
+      rooms.set(roomId, room)
+    } else if (!room) {
+      // Crear nueva sala si no existe
+      room = {
         roomId,
         players: [],
         phase: 'lobby',
@@ -1379,9 +1400,12 @@ io.on('connection', (socket) => {
           category: 'general',
           timePerClue: 60,
         },
-        impostorHistory: [] // Historial de los últimos impostores
-      })
+        impostorHistory: []
+      }
+      rooms.set(roomId, room)
     }
+
+    socket.emit('room-state', room)
   })
 
   // Agregar jugador
@@ -1399,9 +1423,14 @@ io.on('connection', (socket) => {
   })
 
   // Iniciar juego
-  socket.on('start-game', ({ roomId }) => {
+  socket.on('start-game', ({ roomId, config }) => {
     const room = rooms.get(roomId)
     if (!room || room.players.length < 3) return
+
+    // Actualizar configuración si se envió
+    if (config) {
+      room.config = { ...room.config, ...config }
+    }
 
     // Inicializar historial si no existe
     if (!room.impostorHistory) {
@@ -1553,6 +1582,35 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('room-state', room)
       }
     }
+  })
+
+  // Revancha - resetear la sala manteniendo los jugadores
+  socket.on('rematch', ({ roomId }) => {
+    const room = rooms.get(roomId)
+    if (!room) return
+
+    // Resetear jugadores (quitar roles y votos)
+    room.players = room.players.map(p => ({
+      ...p,
+      isImpostor: false,
+      isEliminated: false,
+      votes: 0,
+    }))
+
+    // Resetear estado del juego
+    room.phase = 'lobby'
+    room.secretWord = null
+    room.impostorHint = null
+    room.currentRound = 1
+    room.currentTurn = 0
+    room.clues = []
+    room.votes = {}
+    room.eliminatedPlayer = null
+    room.winner = null
+
+    // Notificar a todos los clientes
+    io.to(roomId).emit('room-state', room)
+    console.log(`Sala ${roomId} reseteada para revancha`)
   })
 
   // Desconexión

@@ -28,9 +28,33 @@ export const useSocket = (roomId) => {
     }
 
     // Eventos del servidor
-    socket.on('room-state', (state) => {
-      // Actualizar estado del juego
-      useGameStore.setState(state)
+    socket.on('room-state', (serverState) => {
+      const currentState = useGameStore.getState()
+      const currentConfig = currentState.config
+      const isLocalMode = roomId?.startsWith('OFFLINE')
+      
+      // Hacer merge del estado del servidor con la configuración local
+      // Priorizar la config del servidor solo si el juego ya inició (phase !== 'lobby')
+      const mergedConfig = serverState.phase === 'lobby' 
+        ? { ...serverState.config, ...currentConfig }
+        : { ...currentConfig, ...serverState.config }
+      
+      // En modo local, preservar la fase del cliente si está más avanzada
+      // Orden de fases: lobby -> secret -> clues -> voting -> results
+      const phaseOrder = ['home', 'lobby', 'secret', 'clues', 'voting', 'results']
+      const currentPhaseIndex = phaseOrder.indexOf(currentState.phase)
+      const serverPhaseIndex = phaseOrder.indexOf(serverState.phase)
+      
+      // En modo local, mantener la fase del cliente si está más avanzada
+      const finalPhase = isLocalMode && currentPhaseIndex > serverPhaseIndex
+        ? currentState.phase
+        : serverState.phase
+      
+      useGameStore.setState({
+        ...serverState,
+        config: mergedConfig,
+        phase: finalPhase
+      })
     })
 
     socket.on('player-joined', (player) => {
@@ -66,7 +90,11 @@ export const useSocket = (roomId) => {
   // Métodos para emitir eventos
   const emitStartGame = () => {
     if (socketRef.current) {
-      socketRef.current.emit('start-game', { roomId })
+      console.log("🚀 ~ emitStartGame ~ store:", store)
+      socketRef.current.emit('start-game', {
+        roomId,
+        config: store.config
+      })
     }
   }
 
@@ -99,11 +127,18 @@ export const useSocket = (roomId) => {
     }
   }
 
+  const emitRematch = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('rematch', { roomId })
+    }
+  }
+
   return {
     socket: socketRef.current,
     emitStartGame,
     emitClue,
     emitVote,
     emitAddPlayer,
+    emitRematch,
   }
 }

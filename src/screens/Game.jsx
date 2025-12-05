@@ -40,7 +40,7 @@ const Game = () => {
 
   // Manejar fin de tiempo general
   const handleGameTimerComplete = () => {
-    if (roomId === 'OFFLINE') {
+    if (roomId.startsWith('OFFLINE')) {
       endRoundEarly()
     }
   }
@@ -155,7 +155,7 @@ const Game = () => {
         )}
 
         {/* Temporizador General (solo modo local) */}
-        {roomId === 'OFFLINE' && (
+        {roomId.startsWith('OFFLINE') && (
           <GameTimer
             totalSeconds={config.gameTimer}
             onComplete={handleGameTimerComplete}
@@ -171,7 +171,7 @@ const Game = () => {
         )}
 
         {/* Instrucciones para modo local */}
-        {roomId === 'OFFLINE' && (
+        {roomId.startsWith('OFFLINE') && (
           <Card className="bg-impostor-purple/10">
             <div className="text-center space-y-3">
               <h3 className="text-xl font-bold text-white">💬 Modo Discusión</h3>
@@ -239,7 +239,7 @@ const Game = () => {
         )}
 
         {/* Botón terminar ronda anticipadamente (modo local) */}
-        {roomId === 'OFFLINE' && (
+        {roomId.startsWith('OFFLINE') && (
           <Button
             size="lg"
             variant="secondary"

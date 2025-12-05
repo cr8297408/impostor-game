@@ -8,6 +8,7 @@ import { PlayerCard } from '@/components/game/PlayerCard'
 import { useGame } from '@/hooks/useGame'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useGameStore } from '@/store/gameStore'
+import { useSocket } from '@/hooks/useSocket'
 
 const Results = () => {
   const navigate = useNavigate()
@@ -15,6 +16,7 @@ const Results = () => {
   const { winner, eliminatedPlayer, resetGame, secretWord } = useGame()
   const { getImpostor, getCivilians } = usePlayers()
   const { resetForRematch } = useGameStore()
+  const { emitRematch } = useSocket(roomId)
 
   const impostor = getImpostor()
   const civilians = getCivilians()
@@ -26,7 +28,13 @@ const Results = () => {
   }
 
   const handleRematch = () => {
+    // Notificar al servidor para resetear la sala
+    emitRematch()
+
+    // Resetear estado local
     resetForRematch()
+
+    // Navegar al lobby
     navigate(`/lobby/${roomId}`)
   }
 
