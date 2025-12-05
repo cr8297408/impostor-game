@@ -19,7 +19,6 @@ const initialState = {
   phase: 'home', // 'home' | 'lobby' | 'secret' | 'clues' | 'voting' | 'results'
   secretWord: null,
   impostorHint: null, // Pista falsa para el impostor
-  category: 'general',
 
   // Rounds & Turns
   currentRound: 1,

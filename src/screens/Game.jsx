@@ -59,9 +59,7 @@ const Game = () => {
     setClueText('')
 
     // Si es online, emitir al servidor
-    if (roomId !== 'OFFLINE') {
-      emitClue(clueText.trim())
-    }
+    emitClue(clueText.trim())
   }
 
   // Navegar a votación cuando cambia la fase
@@ -119,7 +117,7 @@ const Game = () => {
         </Card>
 
         {/* Turno actual - Solo en modo online */}
-        {roomId !== 'OFFLINE' && (
+        {roomId.startsWith('OFFLINE') === false && (
           <Card className={`${
             isMyTurn() ? 'ring-4 ring-impostor-purple' : ''
           }`}>
@@ -163,7 +161,7 @@ const Game = () => {
         )}
 
         {/* Timer por turno (solo modo online) */}
-        {roomId !== 'OFFLINE' && config.timePerClue > 0 && isMyTurn() && (
+        {roomId.startsWith('OFFLINE') === false && config.timePerClue > 0 && isMyTurn() && (
           <Timer
             seconds={config.timePerClue}
             onComplete={handleSubmitClue}
@@ -187,7 +185,7 @@ const Game = () => {
         )}
 
         {/* Formulario de pista (solo modo online) */}
-        {roomId !== 'OFFLINE' && isMyTurn() && (
+        {roomId.startsWith('OFFLINE') === false && isMyTurn() && (
           <Card>
             <div className="space-y-3">
               <label className="text-white font-semibold">
@@ -218,7 +216,7 @@ const Game = () => {
         )}
 
         {/* Lista de pistas (solo modo online) */}
-        {roomId !== 'OFFLINE' && (
+        {roomId.startsWith('OFFLINE') === false && (
           <Card>
             <h3 className="text-xl font-bold text-white mb-4">
               Pistas dadas ({clues.length})

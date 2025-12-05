@@ -90,7 +90,7 @@ export const useSocket = (roomId) => {
   // Métodos para emitir eventos
   const emitStartGame = () => {
     if (socketRef.current) {
-      console.log("🚀 ~ emitStartGame ~ store:", store)
+      console.log("🚀 ~ emitStartGame ~ store:", store.config)
       socketRef.current.emit('start-game', {
         roomId,
         config: store.config
