@@ -50,10 +50,25 @@ export const useSocket = (roomId) => {
         ? currentState.phase
         : serverState.phase
       
+      // En modo local, preservar los jugadores del cliente si hay más que en el servidor
+      // Esto evita que el servidor sobrescriba los jugadores locales
+      const finalPlayers = isLocalMode && currentState.players.length > (serverState.players?.length || 0)
+        ? currentState.players
+        : serverState.players
+      
+      // En modo local, también preservar votos locales
+      const currentVotes = currentState.votes || {}
+      const serverVotes = serverState.votes || {}
+      const finalVotes = isLocalMode && Object.keys(currentVotes).length > Object.keys(serverVotes).length
+        ? currentVotes
+        : serverVotes
+      
       useGameStore.setState({
         ...serverState,
         config: mergedConfig,
-        phase: finalPhase
+        phase: finalPhase,
+        players: finalPlayers,
+        votes: finalVotes || {},
       })
     })
 
