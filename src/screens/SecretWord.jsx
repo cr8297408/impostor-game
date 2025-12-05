@@ -31,8 +31,13 @@ const SecretWord = () => {
 
     // Si hay más jugadores, pasar al siguiente
     if (currentPlayerIndex < players.length - 1) {
-      setCurrentPlayerIndex(prev => prev + 1)
-      setRevealed(false) // Ocultar la tarjeta para el siguiente jugador
+      // Primero ocultar la tarjeta
+      setRevealed(false)
+
+      // Esperar a que la animación termine antes de cambiar de jugador
+      setTimeout(() => {
+        setCurrentPlayerIndex(prev => prev + 1)
+      }, 300) // 300ms para que la animación de ocultar termine
     }
   }
 
