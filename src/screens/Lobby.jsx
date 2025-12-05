@@ -23,10 +23,12 @@ const Lobby = () => {
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return
+    
+    // Crear el jugador localmente primero para obtener el ID
     const playerId = addPlayer(newPlayerName.trim())
-
-    // En modo local, también notificar al servidor
-    if (!isOnline && playerId) {
+    
+    // Siempre sincronizar con el servidor (tanto modo local como online)
+    if (playerId) {
       const player = useGameStore.getState().getPlayerById(playerId)
       if (player) {
         emitAddPlayer(player)

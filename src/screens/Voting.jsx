@@ -58,8 +58,9 @@ const Voting = () => {
         return
       }
 
-      // Registrar voto con el ID del votante seleccionado
+      // Registrar voto localmente y en el servidor
       submitVote(playerId, currentVoterId)
+      emitVote(playerId, currentVoterId)
 
       // Resetear para el siguiente votante
       setCurrentVoterId(null)

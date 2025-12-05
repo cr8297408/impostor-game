@@ -33,42 +33,45 @@ export const useSocket = (roomId) => {
       const currentConfig = currentState.config
       const isLocalMode = roomId?.startsWith('OFFLINE')
       
-      // Hacer merge del estado del servidor con la configuración local
-      // Priorizar la config del servidor solo si el juego ya inició (phase !== 'lobby')
+      // En lobby, priorizar la config local (para preservar selecciones del usuario)
+      // En otras fases, usar la config del servidor
       const mergedConfig = serverState.phase === 'lobby' 
         ? { ...serverState.config, ...currentConfig }
         : { ...currentConfig, ...serverState.config }
       
-      // En modo local, preservar la fase del cliente si está más avanzada
-      // Orden de fases: lobby -> secret -> clues -> voting -> results
+      // Orden de fases para comparación
       const phaseOrder = ['home', 'lobby', 'secret', 'clues', 'voting', 'results']
       const currentPhaseIndex = phaseOrder.indexOf(currentState.phase)
       const serverPhaseIndex = phaseOrder.indexOf(serverState.phase)
       
       // En modo local, mantener la fase del cliente si está más avanzada
+      // (esto es para cuando el usuario avanza localmente después de ver su rol)
       const finalPhase = isLocalMode && currentPhaseIndex > serverPhaseIndex
         ? currentState.phase
         : serverState.phase
       
-      // En modo local, preservar los jugadores del cliente si hay más que en el servidor
-      // Esto evita que el servidor sobrescriba los jugadores locales
-      const finalPlayers = isLocalMode && currentState.players.length > (serverState.players?.length || 0)
-        ? currentState.players
-        : serverState.players
+      // Para los jugadores: el servidor es la fuente de verdad
+      // Pero en modo local, si el cliente tiene jugadores y el servidor no, preservar los del cliente
+      // (esto puede pasar si hay un delay en la sincronización)
+      const serverPlayers = serverState.players || []
+      const clientPlayers = currentState.players || []
+      const finalPlayers = serverPlayers.length >= clientPlayers.length 
+        ? serverPlayers 
+        : clientPlayers
       
-      // En modo local, también preservar votos locales
+      // Para votos en modo local: preservar los votos del cliente si hay más
       const currentVotes = currentState.votes || {}
       const serverVotes = serverState.votes || {}
       const finalVotes = isLocalMode && Object.keys(currentVotes).length > Object.keys(serverVotes).length
         ? currentVotes
-        : serverVotes
+        : (serverVotes || {})
       
       useGameStore.setState({
         ...serverState,
         config: mergedConfig,
         phase: finalPhase,
         players: finalPlayers,
-        votes: finalVotes || {},
+        votes: finalVotes,
       })
     })
 
@@ -123,11 +126,11 @@ export const useSocket = (roomId) => {
     }
   }
 
-  const emitVote = (votedPlayerId) => {
+  const emitVote = (votedPlayerId, voterId = null) => {
     if (socketRef.current) {
       socketRef.current.emit('submit-vote', {
         roomId,
-        voterId: store.currentPlayerId,
+        voterId: voterId || store.currentPlayerId,
         votedPlayerId
       })
     }

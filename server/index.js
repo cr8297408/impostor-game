@@ -1372,22 +1372,28 @@ io.on('connection', (socket) => {
     // Enviar estado actual de la sala
     let room = rooms.get(roomId)
 
-    // Si es modo local (OFFLINE) y la sala existe, resetearla
+    // Si es modo local (OFFLINE) y la sala existe
     if (roomId.startsWith('OFFLINE') && room) {
-      console.log('Reseteando sala OFFLINE para nueva partida')
-      room = {
-        roomId,
-        players: [],
-        phase: 'lobby',
-        config: room.config || {
-          maxPlayers: 8,
-          rounds: 3,
-          category: 'general',
-          timePerClue: 60,
-        },
-        impostorHistory: []
+      // Solo resetear si la fase es 'results' (juego terminado) o si no hay jugadores
+      // Esto permite mantener el estado durante el juego
+      if (room.phase === 'results' || room.players.length === 0) {
+        console.log('Reseteando sala OFFLINE para nueva partida')
+        room = {
+          roomId,
+          players: [],
+          phase: 'lobby',
+          config: room.config || {
+            maxPlayers: 8,
+            rounds: 3,
+            category: 'general',
+            timePerClue: 60,
+            gameTimer: 300,
+          },
+          impostorHistory: room.impostorHistory || [],
+          votes: {},
+        }
+        rooms.set(roomId, room)
       }
-      rooms.set(roomId, room)
     } else if (!room) {
       // Crear nueva sala si no existe
       room = {
@@ -1399,8 +1405,10 @@ io.on('connection', (socket) => {
           rounds: 3,
           category: 'general',
           timePerClue: 60,
+          gameTimer: 300,
         },
-        impostorHistory: []
+        impostorHistory: [],
+        votes: {},
       }
       rooms.set(roomId, room)
     }
@@ -1536,6 +1544,11 @@ io.on('connection', (socket) => {
   socket.on('submit-vote', ({ roomId, voterId, votedPlayerId }) => {
     const room = rooms.get(roomId)
     if (!room) return
+
+    // Asegurar que votes existe
+    if (!room.votes) {
+      room.votes = {}
+    }
 
     room.votes[voterId] = votedPlayerId
 
