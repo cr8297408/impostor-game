@@ -9,6 +9,7 @@ import Voting from './screens/Voting'
 import Results from './screens/Results'
 import Login from './screens/Auth/Login'
 import Register from './screens/Auth/Register'
+import Stats from './screens/Stats'
 // import AdLayout from './components/ads/AdLayout'
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/stats" element={<Stats />} />
                 <Route path="/lobby/:roomId?" element={<Lobby />} />
                 <Route path="/secret/:roomId?" element={<SecretWord />} />
                 <Route path="/game/:roomId?" element={<Game />} />

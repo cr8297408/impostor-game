@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001'
+import { statsApi } from '@/services/api'
 
 export default function UserProfile() {
   const { user, session, signOut, isAuthenticated } = useAuth()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -21,18 +21,12 @@ export default function UserProfile() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${SOCKET_URL}/api/stats/me`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
+      setError(null)
+      const data = await statsApi.getMyStats(session.access_token)
+      setStats(data)
     } catch (error) {
       console.error('Error fetching stats:', error)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -57,6 +51,20 @@ export default function UserProfile() {
     return (
       <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
         <p className="text-white/70 text-center">Cargando...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
+        <p className="text-red-400 text-center">{error}</p>
+        <button
+          onClick={fetchStats}
+          className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg mx-auto block"
+        >
+          Reintentar
+        </button>
       </div>
     )
   }

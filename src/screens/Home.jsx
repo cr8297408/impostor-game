@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Users, Wifi, WifiOff, Play, LogIn, UserPlus } from 'lucide-react'
+import { Users, Wifi, WifiOff, Play, LogIn, UserPlus, TrendingUp } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -216,6 +216,16 @@ const Home = () => {
             </Card>
           </motion.div>
         )}
+
+        {/* Botón de estadísticas */}
+        <Button
+          variant="secondary"
+          onClick={() => navigate('/stats')}
+          className="flex items-center gap-2 mx-auto"
+        >
+          <TrendingUp size={20} />
+          Ver Estadísticas y Leaderboard
+        </Button>
 
         {/* Footer */}
         <p className="text-white/40 text-sm">

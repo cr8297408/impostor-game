@@ -34,14 +34,19 @@ export const useSocket = (roomId, username) => {
 
     const socket = socketRef.current
 
-    // Unirse a la sala
-    socket.emit('join-room', { roomId, playerId: store.currentPlayerId })
+    // Manejar conexión exitosa
+    socket.on('connect', () => {
+      console.log('Conectado al servidor')
+      // Unirse a la sala
+      socket.emit('join-room', { roomId })
+      // Agregar jugador automáticamente (el servidor usa socket.user)
+      socket.emit('add-player', { roomId })
+    })
 
-    // Notificar al servidor sobre este jugador
-    const currentPlayer = store.getPlayerById(store.currentPlayerId)
-    if (currentPlayer) {
-      socket.emit('add-player', { roomId, player: currentPlayer })
-    }
+    // Manejar errores de autenticación
+    socket.on('connect_error', (error) => {
+      console.error('Error de conexión:', error.message)
+    })
 
     // Eventos del servidor
     socket.on('room-state', (state) => {
@@ -88,9 +93,9 @@ export const useSocket = (roomId, username) => {
 
   const emitClue = (text) => {
     if (socketRef.current) {
+      // El servidor obtiene playerId desde socket.user.id
       socketRef.current.emit('add-clue', {
         roomId,
-        playerId: store.currentPlayerId,
         text
       })
     }
@@ -98,9 +103,9 @@ export const useSocket = (roomId, username) => {
 
   const emitVote = (votedPlayerId) => {
     if (socketRef.current) {
+      // El servidor obtiene voterId desde socket.user.id
       socketRef.current.emit('submit-vote', {
         roomId,
-        voterId: store.currentPlayerId,
         votedPlayerId
       })
     }
