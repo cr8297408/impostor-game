@@ -33,8 +33,9 @@ const Voting = () => {
 
   const { emitVote } = useSocket(roomId, username)
   const activePlayers = getActivePlayers()
-  const myVote = votes[currentPlayerId]
-  const isLocalMode = roomId === 'OFFLINE'
+  const safeVotes = votes || {}
+  const myVote = safeVotes[currentPlayerId]
+  const isLocalMode = roomId?.startsWith('OFFLINE') || false
 
   // Estado para modo local: quién está votando actualmente
   const [currentVoterId, setCurrentVoterId] = useState(null)
@@ -60,13 +61,14 @@ const Voting = () => {
         return
       }
 
-      if (votes[currentVoterId]) {
+      if (safeVotes[currentVoterId]) {
         alert('Este jugador ya votó')
         return
       }
 
-      // Registrar voto con el ID del votante seleccionado
+      // Registrar voto localmente y en el servidor
       submitVote(playerId, currentVoterId)
+      emitVote(playerId, currentVoterId)
 
       // Resetear para el siguiente votante
       setCurrentVoterId(null)
@@ -122,7 +124,7 @@ const Voting = () => {
           <div className="mt-6 pt-6 border-t border-white/10">
             <div className="flex items-center justify-between">
               <p className="text-white/80">
-                Votos: {Object.keys(votes).length} / {activePlayers.length}
+                Votos: {Object.keys(safeVotes).length} / {activePlayers.length}
               </p>
               {hasVoted() && (
                 <div className="flex items-center gap-2 text-impostor-green">
@@ -137,7 +139,7 @@ const Voting = () => {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{
-                  width: `${(Object.keys(votes).length / activePlayers.length) * 100}%`
+                  width: `${(Object.keys(safeVotes).length / activePlayers.length) * 100}%`
                 }}
                 className="h-full gradient-purple-pink"
               />
@@ -161,7 +163,7 @@ const Voting = () => {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {activePlayers.map((player) => {
-                  const hasVotedAlready = votes[player.id]
+                  const hasVotedAlready = safeVotes[player.id]
                   return (
                     <div key={player.id} className="relative">
                       <PlayerCard
@@ -219,10 +221,13 @@ const Voting = () => {
         {(!isLocalMode || (isLocalMode && !showVoterSelection)) && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {activePlayers.map((player) => {
-              const playerVotes = Object.values(votes).filter(v => v === player.id).length
-              const isMyVote = myVote === player.id
-              const isMe = player.id === currentPlayerId
-              const canVote = roomId === 'OFFLINE' || (!isMe && !hasVoted())
+              const playerVotes = Object.values(safeVotes).filter(v => v === player.id).length
+
+              // En modo local, usar currentVoterId; en online, usar currentPlayerId
+              const activeVoterId = isLocalMode ? currentVoterId : currentPlayerId
+              const isMyVote = isLocalMode ? false : (myVote === player.id)
+              const isMe = player.id === activeVoterId
+              const canVote = isLocalMode ? !isMe : (!isMe && !hasVoted())
 
               return (
                 <PlayerCard
@@ -256,11 +261,11 @@ const Voting = () => {
         {!allPlayersVoted() && (
           <Card className="bg-impostor-blue/10">
             <p className="text-center text-white/80">
-              {roomId === 'OFFLINE'
+              {roomId.startsWith('OFFLINE')
                 ? '🗳️ Cada jugador debe votar por turno'
                 : '⏳ Esperando votación de todos los jugadores...'}
             </p>
-            {roomId === 'OFFLINE' && (
+            {roomId.startsWith('OFFLINE') && (
               <p className="text-center text-white/60 text-sm mt-2">
                 Pasen el dispositivo entre ustedes para votar
               </p>

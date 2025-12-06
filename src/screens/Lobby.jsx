@@ -25,11 +25,22 @@ const Lobby = () => {
   const currentPlayer = getPlayerById(currentPlayerId)
   const username = !isAuthenticated ? currentPlayer?.name : undefined
 
-  const { emitStartGame } = useSocket(roomId, username)
+  const { emitStartGame, emitAddPlayer } = useSocket(roomId, username)
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return
-    addPlayer(newPlayerName.trim())
+    
+    // Crear el jugador localmente primero para obtener el ID
+    const playerId = addPlayer(newPlayerName.trim())
+    
+    // Siempre sincronizar con el servidor (tanto modo local como online)
+    if (playerId) {
+      const player = useGameStore.getState().getPlayerById(playerId)
+      if (player) {
+        emitAddPlayer(player)
+      }
+    }
+
     setNewPlayerName('')
   }
 
@@ -45,12 +56,8 @@ const Lobby = () => {
       return
     }
 
-    if (isOnline) {
-      emitStartGame()
-    } else {
-      startGame(WORDS)
-      navigate(`/secret/${roomId}`)
-    }
+    // Siempre usar el servidor
+    emitStartGame()
   }
 
   // Escuchar cuando el juego comienza en modo online

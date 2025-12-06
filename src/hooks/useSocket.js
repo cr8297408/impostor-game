@@ -11,7 +11,7 @@ export const useSocket = (roomId, username) => {
   const { session, user } = useAuth()
 
   useEffect(() => {
-    if (!roomId || roomId === 'OFFLINE') return
+    if (!roomId) return
 
     // Preparar autenticación
     const auth = {}
@@ -49,9 +49,51 @@ export const useSocket = (roomId, username) => {
     })
 
     // Eventos del servidor
-    socket.on('room-state', (state) => {
-      // Actualizar estado del juego
-      useGameStore.setState(state)
+    socket.on('room-state', (serverState) => {
+      const currentState = useGameStore.getState()
+      const currentConfig = currentState.config
+      const isLocalMode = roomId?.startsWith('OFFLINE')
+      
+      // En lobby, priorizar la config local (para preservar selecciones del usuario)
+      // En otras fases, usar la config del servidor
+      const mergedConfig = serverState.phase === 'lobby' 
+        ? { ...serverState.config, ...currentConfig }
+        : { ...currentConfig, ...serverState.config }
+      
+      // Orden de fases para comparación
+      const phaseOrder = ['home', 'lobby', 'secret', 'clues', 'voting', 'results']
+      const currentPhaseIndex = phaseOrder.indexOf(currentState.phase)
+      const serverPhaseIndex = phaseOrder.indexOf(serverState.phase)
+      
+      // En modo local, mantener la fase del cliente si está más avanzada
+      // (esto es para cuando el usuario avanza localmente después de ver su rol)
+      const finalPhase = isLocalMode && currentPhaseIndex > serverPhaseIndex
+        ? currentState.phase
+        : serverState.phase
+      
+      // Para los jugadores: el servidor es la fuente de verdad
+      // Pero en modo local, si el cliente tiene jugadores y el servidor no, preservar los del cliente
+      // (esto puede pasar si hay un delay en la sincronización)
+      const serverPlayers = serverState.players || []
+      const clientPlayers = currentState.players || []
+      const finalPlayers = serverPlayers.length >= clientPlayers.length 
+        ? serverPlayers 
+        : clientPlayers
+      
+      // Para votos en modo local: preservar los votos del cliente si hay más
+      const currentVotes = currentState.votes || {}
+      const serverVotes = serverState.votes || {}
+      const finalVotes = isLocalMode && Object.keys(currentVotes).length > Object.keys(serverVotes).length
+        ? currentVotes
+        : (serverVotes || {})
+      
+      useGameStore.setState({
+        ...serverState,
+        config: mergedConfig,
+        phase: finalPhase,
+        players: finalPlayers,
+        votes: finalVotes,
+      })
     })
 
     socket.on('player-joined', (player) => {
@@ -87,7 +129,11 @@ export const useSocket = (roomId, username) => {
   // Métodos para emitir eventos
   const emitStartGame = () => {
     if (socketRef.current) {
-      socketRef.current.emit('start-game', { roomId })
+      console.log("🚀 ~ emitStartGame ~ store:", store.config)
+      socketRef.current.emit('start-game', {
+        roomId,
+        config: store.config
+      })
     }
   }
 
@@ -101,13 +147,29 @@ export const useSocket = (roomId, username) => {
     }
   }
 
-  const emitVote = (votedPlayerId) => {
+  const emitVote = (votedPlayerId, voterId = null) => {
     if (socketRef.current) {
       // El servidor obtiene voterId desde socket.user.id
       socketRef.current.emit('submit-vote', {
         roomId,
+        voterId: voterId || store.currentPlayerId,
         votedPlayerId
       })
+    }
+  }
+
+  const emitAddPlayer = (player) => {
+    if (socketRef.current) {
+      socketRef.current.emit('add-player', {
+        roomId,
+        player
+      })
+    }
+  }
+
+  const emitRematch = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('rematch', { roomId })
     }
   }
 
@@ -116,5 +178,7 @@ export const useSocket = (roomId, username) => {
     emitStartGame,
     emitClue,
     emitVote,
+    emitAddPlayer,
+    emitRematch,
   }
 }
