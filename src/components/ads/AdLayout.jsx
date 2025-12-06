@@ -37,25 +37,25 @@ const AdLayout = ({ children }) => {
       {/* Layout para mobile */}
       <div className="lg:hidden flex flex-col min-h-screen">
         {/* Anuncio superior - Mobile (fijo) */}
-        <div className="fixed top-0 left-0 right-0 bg-impostor-darker/95 backdrop-blur-sm border-b border-impostor-light/20 z-50">
+        <div className="fixed top-0 left-0 right-0 bg-impostor-darker/95 backdrop-blur-sm border-b border-impostor-light/20 z-50 h-16 overflow-hidden">
           <AdBanner
             slot="4098087716"
             format="horizontal"
-            className="w-full"
+            className="w-full h-full"
           />
         </div>
 
         {/* Contenido principal */}
-        <main className="flex-1 pt-24 pb-24">
+        <main className="flex-1 pt-16 pb-16">
           {children}
         </main>
 
         {/* Anuncio inferior - Mobile (fijo) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-impostor-darker/95 backdrop-blur-sm border-t border-impostor-light/20 z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-impostor-darker/95 backdrop-blur-sm border-t border-impostor-light/20 z-50 h-16 overflow-hidden">
           <AdBanner
             slot="4098087716"
             format="horizontal"
-            className="w-full"
+            className="w-full h-full"
           />
         </div>
       </div>

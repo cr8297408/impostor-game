@@ -27,10 +27,11 @@ const AdBanner = ({
 
   // En desarrollo, mostrar un placeholder
   if (process.env.NODE_ENV === 'development') {
+    const minHeight = format === 'horizontal' ? '60px' : '250px'
     return (
       <div
         className={`bg-gray-800/50 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center ${className}`}
-        style={{ minHeight: '250px' }}
+        style={{ minHeight }}
       >
         <div className="text-center p-4">
           <p className="text-gray-400 text-sm font-mono">
